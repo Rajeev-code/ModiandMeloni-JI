@@ -38,8 +38,8 @@ const hitSound = document.getElementById("hitSound");
 // 🧩 Responsive canvas
 function resizeCanvas() {
   const size = Math.min(window.innerWidth * 0.9, window.innerHeight * 0.9);
-  canvas.width = size * 0.7;
-  canvas.height = size;
+  canvas.width = size * 0.97;
+  canvas.height = size * 0.97;
 }
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
@@ -60,7 +60,7 @@ let bird = {
   y: canvas.height / 2,
   width: canvas.width * 0.13,
   height: canvas.width * 0.09,
-  gravity: 0.95,   // perfect for smooth fall
+  gravity: 0.38,   // perfect for smooth fall
   lift: -6.5,      // smoother upward jump
   velocity: 0
 };
@@ -220,3 +220,4 @@ gameLoop();
 </script>
 </body>
 </html>
+
