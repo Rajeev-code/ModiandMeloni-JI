@@ -2,30 +2,36 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Flappy Bird (Optimized)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Flappy Bird (Responsive)</title>
 <style>
-  body {
+  html, body {
     margin: 0;
+    padding: 0;
+    height: 100%;
     background: linear-gradient(to bottom, #70c5ce, #ffffff);
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
     overflow: hidden;
-    touch-action: manipulation;
+    touch-action: none;
   }
+
   canvas {
+    display: block;
     border: 3px solid #000;
     border-radius: 10px;
     background: #70c5ce;
+    width: 95vw;
+    height: auto;
+    max-height: 90vh;
   }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 
-<!-- 🎵 Background Music + Hit Sound -->
+<!-- 🎵 Sounds -->
 <audio id="bgMusic" src="music.mp3" loop></audio>
 <audio id="hitSound" src="hit.mp3"></audio>
 
@@ -35,37 +41,40 @@ const ctx = canvas.getContext("2d");
 const music = document.getElementById("bgMusic");
 const hitSound = document.getElementById("hitSound");
 
-// 🧩 Responsive canvas
+// 🧩 Dynamic resizing (keeps aspect ratio)
 function resizeCanvas() {
-  const size = Math.min(window.innerWidth * 0.9, window.innerHeight * 0.9);
-  canvas.width = size * 0.97;
-  canvas.height = size * 0.97;
+  const ratio = 16 / 9;
+  let w = window.innerWidth * 0.95;
+  let h = w / ratio;
+
+  if (h > window.innerHeight * 0.9) {
+    h = window.innerHeight * 0.9;
+    w = h * ratio;
+  }
+
+  canvas.width = w;
+  canvas.height = h;
 }
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
 // 🖼️ Load images
-const birdImg = new Image();
-birdImg.src = "bird.png";
+const birdImg = new Image(); birdImg.src = "bird.png";
+const pipeImg = new Image(); pipeImg.src = "pipe.png";
+const bgImg = new Image(); bgImg.src = "bg.png";
 
-const pipeImg = new Image();
-pipeImg.src = "pipe.png";
-
-const bgImg = new Image();
-bgImg.src = "bg.png";
-
-// 🐤 Bird setup (tuned for realistic physics)
+// 🐤 Bird setup
 let bird = {
   x: 60,
   y: canvas.height / 2,
-  width: canvas.width * 0.13,
-  height: canvas.width * 0.09,
-  gravity: 0.38,   // perfect for smooth fall
-  lift: -6.5,      // smoother upward jump
+  width: canvas.width * 0.08,
+  height: canvas.height * 0.06,
+  gravity: 0.4,
+  lift: -6,
   velocity: 0
 };
 
-// 🧱 Pipe setup
+// 🧱 Pipes
 let pipes = [];
 let frame = 0;
 let score = 0;
@@ -78,23 +87,27 @@ function flap() {
   } else {
     resetGame();
   }
-  if (music.paused) music.play(); // start music on first interaction
+  if (music.paused) music.play();
 }
+
 document.addEventListener("keydown", e => { if (e.code === "Space") flap(); });
 canvas.addEventListener("mousedown", flap);
-canvas.addEventListener("touchstart", flap);
+canvas.addEventListener("touchstart", e => {
+  e.preventDefault();
+  flap();
+});
 
-// 🌄 Draw Background
+// 🌄 Background
 function drawBackground() {
   ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
 }
 
-// 🐤 Draw Bird
+// 🐤 Bird
 function drawBird() {
   ctx.drawImage(birdImg, bird.x - bird.width / 2, bird.y - bird.height / 2, bird.width, bird.height);
 }
 
-// 🧱 Draw Pipes
+// 🧱 Pipes
 function drawPipes() {
   pipes.forEach(pipe => {
     // Top pipe
@@ -110,23 +123,22 @@ function drawPipes() {
   });
 }
 
-// 🌀 Update Pipes
+// 🌀 Update pipes
 function updatePipes() {
-  if (frame % 110 === 0) {
-    let top = Math.random() * (canvas.height / 2.5);
-    let gap = canvas.height * 0.28;
+  if (frame % 100 === 0) {
+    let top = Math.random() * (canvas.height / 3);
+    let gap = canvas.height * 0.25;
     pipes.push({
       x: canvas.width,
-      width: canvas.width * 0.18,
+      width: canvas.width * 0.15,
       top: top,
       bottom: top + gap
     });
   }
 
   pipes.forEach(pipe => {
-    pipe.x -= 2.1; // perfect speed for mobile
+    pipe.x -= canvas.width * 0.0045;
 
-    // Collision detection
     if (
       bird.x + bird.width / 2 > pipe.x &&
       bird.x - bird.width / 2 < pipe.x + pipe.width &&
@@ -143,14 +155,13 @@ function updatePipes() {
   if (pipes.length && pipes[0].x < -pipes[0].width) pipes.shift();
 }
 
-// 🧮 Draw Score & FPS
+// 🧮 Score & FPS
 let fps = 0, lastTime = performance.now(), frames = 0;
 function drawScoreAndFPS() {
   ctx.fillStyle = "black";
-  ctx.font = `${canvas.width * 0.07}px Arial`;
-  ctx.fillText("Score: " + score, 10, canvas.width * 0.1);
-  
-  // FPS counter
+  ctx.font = `${canvas.width * 0.06}px Arial`;
+  ctx.fillText("Score: " + score, 10, canvas.width * 0.08);
+
   const now = performance.now();
   frames++;
   if (now - lastTime >= 1000) {
@@ -158,13 +169,13 @@ function drawScoreAndFPS() {
     frames = 0;
     lastTime = now;
   }
-  ctx.font = `${canvas.width * 0.05}px Arial`;
-  ctx.fillText(`FPS: ${fps}`, canvas.width - 120, 40);
+  ctx.font = `${canvas.width * 0.04}px Arial`;
+  ctx.fillText(`FPS: ${fps}`, canvas.width - 100, 30);
 }
 
-// 🕊️ Update Bird
+// 🕊️ Update bird
 function updateBird() {
-  bird.velocity += bird.gravity * 0.2; // adjusted to scale with frame time
+  bird.velocity += bird.gravity * 0.25;
   bird.y += bird.velocity;
 
   if (bird.y + bird.height / 2 > canvas.height || bird.y - bird.height / 2 < 0) {
@@ -174,19 +185,20 @@ function updateBird() {
   }
 }
 
-// 💀 Draw Game Over
+// 💀 Game Over
 function drawGameOver() {
   ctx.fillStyle = "rgba(0,0,0,0.6)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "white";
-  ctx.font = `${canvas.width * 0.12}px Arial`;
-  ctx.fillText("Game Over!", canvas.width * 0.18, canvas.height / 2);
-  ctx.font = `${canvas.width * 0.07}px Arial`;
-  ctx.fillText("Score: " + score, canvas.width * 0.35, canvas.height / 2 + 50);
-  ctx.fillText("Tap to Restart", canvas.width * 0.25, canvas.height / 2 + 100);
+  ctx.textAlign = "center";
+  ctx.font = `${canvas.width * 0.1}px Arial`;
+  ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2 - 20);
+  ctx.font = `${canvas.width * 0.06}px Arial`;
+  ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 40);
+  ctx.fillText("Tap to Restart", canvas.width / 2, canvas.height / 2 + 90);
 }
 
-// 🔄 Reset Game
+// 🔄 Reset
 function resetGame() {
   bird.y = canvas.height / 2;
   bird.velocity = 0;
@@ -197,7 +209,7 @@ function resetGame() {
   music.play();
 }
 
-// 🎮 Game Loop
+// 🕹️ Main loop
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackground();
@@ -219,5 +231,4 @@ function gameLoop() {
 gameLoop();
 </script>
 </body>
-</html>
-
+  </html>
